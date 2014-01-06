@@ -1,0 +1,86 @@
+// Testing memset with one allocation block
+// -----------------------------------------------------
+
+mms_malloc 256
+
+// testing basic funtionality
+mms_memset 4096 a 32
+mms_memcpy 0 4096 32
+// reset memory allocation for next test
+mms_free 4096
+mms_malloc 256
+
+// testing basic funtionality with offset.  first and last byte should be 0
+mms_memset 4097 A 254
+mms_memcpy 0 4096 256
+// reset memory allocation for next test
+mms_free 4096
+mms_malloc 256
+
+// testing basic funtionality with with offset.  first byte should be 0
+mms_memset 4097 B 255
+mms_memcpy 0 4096 256
+
+// testing memset 0 size
+// nothing in vmem should not change
+mms_memset 4096 C 256
+mms_memset 4096 D 0
+mms_memcpy 0 4096 256
+
+
+// done testing
+mms_free 4096
+
+
+
+// Testing memset with allocations larger then physical memory
+// -----------------------------------------------------
+mms_malloc 1024
+mms_malloc 1024
+
+// done testing
+mms_free 4096
+mms_free 8192
+
+
+// Testing memcpy within same block
+// -----------------------------------------------------
+mms_malloc 256
+
+mms_memset 4096 C 8
+mms_memset 4112 A 8
+mms_memcpy 4096 4112 7
+mms_memcpy 0 4096 256
+
+mms_memcpy 4096 4096 8
+mms_memcpy 0 4096 256
+mms_free 4096
+
+
+// Testing memcpy to different block
+// -----------------------------------------------------
+mms_malloc 256
+mms_malloc 256
+
+mms_memset 8192 C 256
+mms_memcpy 0 8192 256
+
+// dest memory buffer too small
+mms_memcpy 4098 8192 257
+
+mms_memcpy 4098 8192 65
+mms_memcpy 0 8192 256
+
+mms_memset 8192 D 256
+mms_memcpy 8192 4096 4
+mms_memcpy 0 8192 256
+
+// done testing
+mms_free 4096
+mms_free 8192
+
+
+
+// malloc larger more than available virtual memory
+mms_malloc 5000 arg
+

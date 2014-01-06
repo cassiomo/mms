@@ -1,0 +1,179 @@
+// Testing mms_malloc
+// ----------------------------------------------------
+
+// malloc larger more than available virtual memory
+mms_malloc 5000 arg
+* return 0
+* arg 100
+
+// malloc twice should get two client addresses
+mms_malloc 16 arg
+* return 4096
+* arg 0
+mms_malloc 32 arg
+* return 8192
+* arg 0
+mms_free 4096
+* return 0
+mms_free 8192
+* return 0
+
+
+// Testing mms_free
+// -----------------------------------------------------
+
+mms_malloc 32
+* return 4096
+mms_malloc 32
+* return 8192
+
+// mms_free should not affect the other allocations
+mms_memset 8192 a 32
+mms_memcpy 0 8192 32
+* buffer a 0 31
+* buffer 0 32 32
+mms_free 4096
+* return 0
+mms_memcpy 0 8192 32
+* buffer a 0 31
+* buffer 0 32 32
+mms_free 8192
+* return 0
+
+// try to free the same client addresses again
+mms_free 4096
+* return 104
+mms_free 8196
+* return 104
+
+
+// Testing memset with one allocation block
+// -----------------------------------------------------
+
+mms_malloc 256
+* return 4096
+
+// testing basic funtionality
+mms_memset 4096 a 32
+* return 0
+mms_memcpy 0 4096 32
+* buffer a 0 31
+* buffer 0 32 300
+// reset memory allocation for next test
+mms_free 4096
+* return 0
+mms_malloc 256
+* return 4096
+
+// testing basic funtionality with offset.  first and last byte should be 0
+mms_memset 4097 A 254
+mms_memcpy 0 4096 256
+* buffer 0 0 0
+* buffer A 1 254
+* buffer 0 255 300
+// reset memory allocation for next test
+mms_free 4096
+* return 0
+mms_malloc 256
+* return 4096
+
+// testing basic funtionality with with offset.  first byte should be 0
+mms_memset 4097 B 255
+mms_memcpy 0 4096 256
+* buffer 0 0 0
+* buffer B 1 255
+* buffer 0 256 300
+
+// testing memset 0 size
+// nothing in vmem should not change
+mms_memset 4096 C 256
+mms_memset 4096 D 0
+mms_memcpy 0 4096 256
+* buffer C 0 256
+
+// testing memset negative invalid size
+mms_memset 4096 c -1
+* return 101
+
+// testing memset with buffer too small
+mms_memset 4096 c 257
+* return 101
+
+// done testing
+mms_free 4096
+* return 0
+
+
+// Testing memset with allocations larger then physical memory
+// -----------------------------------------------------
+mms_malloc 1024
+* return 4096
+mms_malloc 1024
+* return 8192
+
+// done testing
+mms_free 4096
+* return 0
+mms_free 8192
+* return 0
+
+
+// Testing memcpy within same block
+// -----------------------------------------------------
+mms_malloc 256
+* return 4096
+
+mms_memset 4096 C 8
+mms_memset 4112 A 8
+mms_memcpy 4096 4112 7
+mms_memcpy 0 4096 256
+// vmem 4096 AAAAAAAC
+// vmem 4112 AAAAAAAA
+* buffer A 0 6
+* buffer C 7 7
+* buffer A 16 23
+
+mms_memcpy 4096 4096 8
+mms_memcpy 0 4096 256
+// vmem 4096 AAAAAAAC
+* buffer A 0 6
+* buffer C 7 7
+
+mms_free 4096
+* return 0
+
+
+// Testing memcpy to different block
+// -----------------------------------------------------
+mms_malloc 256
+* return 4096
+mms_malloc 256
+* return 8192
+
+mms_memset 8192 C 256
+mms_memcpy 0 8192 256
+* buffer C 0 255
+
+// dest memory buffer too small
+mms_memcpy 4098 8192 257
+* return 101 
+
+mms_memcpy 4098 8192 65
+mms_memcpy 0 8192 256
+// vmem should have C's at 0x0002 - 0x0042
+* buffer C 2 42
+
+mms_memset 8192 D 256
+mms_memcpy 8192 4096 4
+mms_memcpy 0 8192 256
+// vmem should have '00' at 0x1000 - 0x1001 and
+// C's at 0x1002 - 0x1003 and D's at 0x1004 - 0x10FF
+* buffer 0 0 1
+* buffer C 2 3
+* buffer D 4 255
+
+// done testing
+mms_free 4096
+* return 0
+mms_free 8192
+* return 0
